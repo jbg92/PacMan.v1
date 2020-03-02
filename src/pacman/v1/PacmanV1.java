@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package packman.v1;
+package pacman.v1;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -14,17 +14,16 @@ import javafx.stage.Stage;
  *
  * @author John-Berge
  */
-public class PackmanV1 extends Application{
+public class PacmanV1 extends Application{
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
         int mapWidth=28, mapHeight=31;
         double unit=500/mapWidth, width=unit*mapWidth, height=unit*mapHeight;
         
-        
         BorderPane root=new BorderPane();
         ScorePane topPane=new ScorePane(unit);
-        LevelPane pane=new LevelPane(width,height,mapWidth,mapHeight,unit);
+        LevelPane pane=new LevelPane(width,height,mapWidth,mapHeight,unit,topPane.getScore());
         MiscPane bottomPane=new MiscPane(width, unit);
         
         root.setCenter(pane);

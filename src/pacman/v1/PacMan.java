@@ -3,16 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package packman.v1;
+package pacman.v1;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import java.util.ArrayList;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
-import javafx.util.Duration;
-
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 /**
  *
  * @author John-Berge
@@ -21,18 +20,26 @@ public class PacMan extends Movable{
     protected Circle head;
     protected Line mouth;
     protected Group pacMan=new Group();
-    protected int score=0, dotsEaten;
+    protected int score=0, dotsEaten, life, superPac=0;
     protected double radius;//width/height=kardtimenjon i px
     protected MapPane mapPane;
+    protected ArrayList<SuperGhost> ghosts;
+    protected Text scoreTxt, winTxt;
     
-    public PacMan(double width, double height, int mW, int mH, double cellDim, MapPane map){
+    public PacMan(double width, double height, int mW, int mH, double cellDim, MapPane map, ArrayList<SuperGhost> ghosts,Text score){
         super(width, height, mW, mH, cellDim, map.getMap());
-        cx=14;
-        cy=23;
+        this.ghosts=ghosts;
+        this.scoreTxt=score;
+        
+        startX=14;
+        startY=23;
+        cx=startX;
+        cy=startY;
         dir=1;
         dotsEaten=0;
         mapPane=map;
-        
+        life=3;
+
         x=cellDim*cx+cellDim/2;
         y=(cellDim*cy)+cellDim/2;
         radius=cellDim/3;
@@ -42,43 +49,89 @@ public class PacMan extends Movable{
         pacMan.getChildren().addAll(head,mouth);
         getChildren().add(pacMan);
         
+        winTxt=new Text(width/3.3, height/2, "LOSER!!!");
+        winTxt.setFont(new Font("Ariel", 50));
+        winTxt.setStroke(Color.YELLOW);
+        
+        
         pacMan.setTranslateX(this.x);
         pacMan.setTranslateY(this.y);
-        animatePacMan();
+        animate();
     }
-    private void animatePacMan(){
-        // Create an animation for moving PacMan
-        animation = new Timeline(new KeyFrame(Duration.millis(200), e -> movePacMan()));
-        animation.setCycleCount(Timeline.INDEFINITE);
-        animation.play(); // Start animation
-    }
-    private void movePacMan(){
+    @Override
+    protected void move(){
+        scoreTxt.setText(score+"");
+        lose();
+        
         buttonHandeling();
         tPHandeling();
         collisionHandeling();
         
         x+=dx;
         y+=dy;
-
+        
+        if(superPac>0){
+                superPac--;
+        }
+        lose();
+        
         pacMan.setTranslateX(x);
         pacMan.setTranslateY(y);
         eatBall();
         if(dotsEaten==mapPane.getDotAmount()){
-            System.out.println("Winner!!!");
+            winTxt.setText("WINNER");
+            getChildren().add(winTxt);
+            animation.stop();
+            for(SuperGhost g2:ghosts){
+                g2.animation.stop();
+            }
+        }
+    }
+    private void lose(){
+        for(SuperGhost g:ghosts){
+            if(superPac>0){
+                if(superPac%2==1&&superPac<50){
+                    g.setColor(Color.WHITE);
+                }
+                else if(superPac%2==0){
+                    g.setColor(Color.BLUE);
+                }
+            }
+            else{
+                g.setSColor();
+            }
+            if(g.getCX()==cx&&g.getCY()==cy){
+                if(superPac==0){
+                    life--;
+                    returnHome();
+                    if(life==0){
+                        animation.stop();
+                        getChildren().add(winTxt);
+                        for(SuperGhost g2:ghosts){
+                            g2.animation.stop();
+                        }
+                    }
+                    break;
+                }
+                else{
+                    g.returnHome();
+                    score+=200;
+                }
+            }
         }
     }
     private void eatBall(){
         if(map[cy][cx]==2||map[cy][cx]==3){
-            map[cy][cx]=1;
             if(map[cy][cx]==3){
+                superPac=100;
                 score+=50;
             }
-            else{
+            else if(map[cy][cx]==2){
                score+=10;
             }
+            map[cy][cx]=1;
             mapPane.getChildren().remove(mapPane.mapObjects[cy][cx]);
             dotsEaten++;
-            System.out.println(score);
         }
     }
     protected void buttonHandeling(){
@@ -105,82 +158,8 @@ public class PacMan extends Movable{
                 break;
         } 
     }
-    private void tPHandeling(){
-        if(x+dx<-radius){
-            x=width+cellDim/2;
-        }
-        else if(x+dx>=width){
-            x=-cellDim/2;
-        }
-        else if(y+dy<-radius){
-            y=height+cellDim/2;
-        }
-        else if(y+dy>=height){
-            y=-cellDim/2;
-        }
-    }
-    private void collisionHandeling(){
-        switch(dir){
-            case 1:
-                if(cx>0){
-                    if(map[cy][cx-1]==0){
-                        dx=0;
-                    }
-                }
-                if(dx<0){
-                    cx--;
-                    if(cx<0){
-                        cx=mW-1;
-                    }
-                }
-                break;
-            case 2:
-                if(cx<mW-1){
-                    if(map[cy][cx+1]==0){
-                        dx=0;
-                    }
-                }
-                if(dx>0){
-                    cx++;
-                    if(cx>mW-1){
-                        cx=0;
-                    }
-                }
-                break;
-            case 3:
-                if(cy>0){
-                    if(map[cy-1][cx]==0){
-                        dy=0;
-                    }
-                }
-                if(dy<0){
-                    cy--;
-                    if(cy<0){
-                        cy=mH-1;
-                    }
-                }
-                break;
-            case 4:
-                if(cy<mH-1){
-                    if(map[cy+1][cx]==0){
-                        dy=0;
-                    }
-                }
-                if(dy>0){
-                    cy++;
-                    if(cy>mH-1){
-                        cy=0;
-                    }
-                }
-                break;
-        }
-      
-        //System.out.println(cx+":"+cy);
-        
-    }
     public void changeDir(int dir){
         this.dir=dir;
-        //System.out.println(dir);
     }
     
 }
